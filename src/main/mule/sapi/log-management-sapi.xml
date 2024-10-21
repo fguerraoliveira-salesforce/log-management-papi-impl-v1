@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+
+	<sub-flow name="log-management-sapi-request-subflow"
+		doc:id="bcfae12f-3927-4add-9779-544feb4d13ef">
+		<logger level="DEBUG" doc:name="Log Payload" doc:id="801bb923-735b-465d-a88c-3d065d9ea66b" message="#[payload]"/>
+		<http:request method="${log_management_sapi.methods.post_log_message.method}" doc:name="Request"
+			doc:id="436f20da-7dbe-4ca3-b47f-9071467c5dc6"
+			config-ref="LogManagementSapiHTTPRequestConfig" 
+			path="${log_management_sapi.methods.post_log_message.path}" 
+			responseTimeout="${log_management_sapi.methods.post_log_message.response.timeout}"/>
+		<logger level="DEBUG" doc:name="Log Response" doc:id="a0f97693-ef73-4331-9fcd-f875e96ee3ea" message="#[payload]" />
+	</sub-flow>
+
+</mule>

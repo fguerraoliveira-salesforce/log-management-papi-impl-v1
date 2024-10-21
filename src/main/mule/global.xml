@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule
+	xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+
+	<configuration-properties
+		doc:name="Configuration properties"
+		doc:id="2473c844-8d1b-495d-95c0-c6e90808264b"
+		file="config/properties.yaml" />
+
+	<configuration-properties
+		doc:name="Configuration properties"
+		doc:id="ec8d01d1-0ee0-48c2-97ed-e7450a03a221"
+		file="config/${env}-properties.yaml" />
+
+
+	<http:listener-config
+		name="log-management-process-api-httpListenerConfig">
+		<http:listener-connection host="${http.host}"
+			port="${http.port}" />
+	</http:listener-config>
+
+
+	<apikit:config name="log-management-process-api-config"
+		api="resource::cb984a9b-674c-450c-9c17-76ab21db40fc:log-management-process-api:1.0.0:raml:zip:log-management-process-api.raml"
+		outboundHeadersMapName="outboundHeaders"
+		httpStatusVarName="httpStatus" />
+
+	<http:request-config
+		name="LogManagementSapiHTTPRequestConfig"
+		doc:name="HTTP Request configuration"
+		doc:id="2d7971a7-aade-473b-917a-dd45746fb845" basePath="${log_management_sapi.base_path}"
+		responseTimeout="${timeout}">
+		<http:request-connection host="${log_management_sapi.host}"
+			port="${log_management_sapi.port}">
+			<reconnection>
+				<reconnect-forever />
+			</reconnection>
+		</http:request-connection>
+	</http:request-config>
+
+
+</mule>

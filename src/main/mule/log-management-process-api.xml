@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:anypoint-mq="http://www.mulesoft.org/schema/mule/anypoint-mq" 
+xmlns:validation="http://www.mulesoft.org/schema/mule/validation" 
+xmlns="http://www.mulesoft.org/schema/mule/core" 
+xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" 
+xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" 
+xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" 
+xmlns:http="http://www.mulesoft.org/schema/mule/http" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/anypoint-mq http://www.mulesoft.org/schema/mule/anypoint-mq/current/mule-anypoint-mq.xsd">
+    
+    <flow name="log-management-process-api-main">
+        <http:listener config-ref="log-management-process-api-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body><![CDATA[#[output json
+
+---
+payload]]]></http:body>
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="log-management-process-api-config" />
+        <error-handler ref="main-error-handler" />
+    </flow>
+    <flow name="post:\log-management:application\json:log-management-process-api-config">
+        <validation:is-true doc:name="Is true" doc:id="3ec6287c-ed48-4cd0-b2d8-6b2dda89a5ca" expression="#[! isEmpty(payload.logMessage)]" message='"The log content message can not be null"'/>
+		<ee:transform doc:name="Transform Message" doc:id="0e66600f-c75c-4fa7-8a4e-f7a9535228a0" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="transactionId" ><![CDATA[attributes.header."x-correlation-id" default correlationId]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<flow-ref doc:name="process-log-message-subflow" doc:id="7bc5009e-c54e-4664-ac08-f8281002e42f" name="process-log-message-subflow"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="b52d0f29-0dc7-4e8a-8b42-0d8ff274bb5a" type="VALIDATION:INVALID_BOOLEAN">
+				<logger level="ERROR" doc:name="Log Error" doc:id="6c48d81e-6609-44a9-8f29-c81b6b0cfb12" message="#[error]"/>
+				<set-variable value="400" doc:name="Set httpStatus" doc:id="60b9bf0b-ce59-4241-bb4e-d938fd202634" variableName="httpStatus"/>
+				<set-payload value="#[output json&#10;---&#10;{&#10;	status: 400,&#10;	message: {&#10;		error: error.exception.errorMessage&#10;	}&#10;}]" doc:name="Set Payload" doc:id="f6c89797-2708-4d22-9472-4f2757f68be7" />
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="e32ad39a-bcbd-42f2-adac-ecf01b48f287" >
+				<logger level="ERROR" doc:name="Log Error" doc:id="710f8a09-a74b-4ba1-be45-08a6784ce0d0" message="Un enexpected error ocurred #[error]" />
+				<set-variable value="500" doc:name="Set httpStatus" doc:id="a8e44c0c-cd1b-43f0-8564-0b57a5045bc4" variableName="httpStatus" />
+				<raise-error doc:name="Raise error" doc:id="bcacb644-0a3c-4aa6-b5fa-0df06d4429cd" type="LOG_MANAGEMENT:INTERNAL_SERVER_ERROR" description="An unexpected error ocurred"/>
+			</on-error-propagate>
+		</error-handler>
+    </flow>
+	<flow name="log-management-process-subscribe-flow" doc:id="27e6144b-147b-4a9a-876f-98b36d196443" >
+		<anypoint-mq:subscriber doc:name="Subscriber" doc:id="8700dacb-e4a1-4e4d-8104-00b1dcb5a27b" config-ref="Anypoint_MQ_Config" destination="log-management-queue" acknowledgementTimeout="3000">
+			<reconnect-forever frequency="5000" />
+			<anypoint-mq:subscriber-type >
+				<anypoint-mq:prefetch maxLocalMessages="5" />
+			</anypoint-mq:subscriber-type>
+		</anypoint-mq:subscriber>
+		<logger level="INFO" doc:name="Log Message Consumed" doc:id="01d38a9a-7ad0-4301-aa98-55c87167871e" message="Message Consume Attributes #[attributes]" />
+		<flow-ref doc:name="process-send-log-message-subflow" doc:id="759dc7e3-acae-4d6c-9f1b-48ab4b8b7480" name="process-send-log-message-subflow"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="684906e4-ffc6-4c0c-affb-7128d68a7f95" >
+				<logger level="ERROR" doc:name="Log Error" doc:id="6c502c28-8963-473f-a5a7-71be6863ca28" message="#[error]" />
+				<raise-error doc:name="Raise error" doc:id="b4a65c73-c018-4267-a1eb-7e786442ce67" type="QUEUE:DEQUEUE_ERROR" description="Error on consuming a message: #[error.description]" />
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>

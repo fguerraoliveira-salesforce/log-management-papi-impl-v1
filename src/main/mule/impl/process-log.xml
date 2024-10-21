@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule
+	xmlns:anypoint-mq="http://www.mulesoft.org/schema/mule/anypoint-mq"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/anypoint-mq http://www.mulesoft.org/schema/mule/anypoint-mq/current/mule-anypoint-mq.xsd">
+	<anypoint-mq:config name="Anypoint_MQ_Config"
+		doc:name="Anypoint MQ Config"
+		doc:id="a01341a4-4f90-4d3f-a72a-0109d168b7df">
+		<anypoint-mq:connection
+			url="https://mq-us-east-1.anypoint.mulesoft.com/api/v1/organizations/cb984a9b-674c-450c-9c17-76ab21db40fc/environments/6ef6cdbe-e747-4e6f-b7df-86c22ae1cbcc"
+			clientId="ddb2a23f99da4ba29c804a2e4a69e5ee"
+			clientSecret="b91a3abc4F0E47c1Bb059F501535b87e">
+			<reconnection failsDeployment="true">
+				<reconnect-forever />
+			</reconnection>
+			<anypoint-mq:tcp-client-socket-properties
+				connectionTimeout="60000" />
+		</anypoint-mq:connection>
+		<expiration-policy maxIdleTime="5"
+			timeUnit="MINUTES" />
+	</anypoint-mq:config>
+	<sub-flow name="process-log-message-subflow" doc:id="eadad566-5200-49ab-b76e-87507852b46f" >
+		<logger level="INFO" doc:name="Logger" doc:id="86e694f6-d902-47ab-b4b4-1b01fc4785d6" message="#[payload]"/>
+		<try doc:name="Try" doc:id="768ad9f0-ba8a-45e2-88e2-0df2600b559e" >
+			<anypoint-mq:publish doc:name="Publish Log Message" doc:id="83bfdfe4-224a-447f-9cae-5a932f1e5c66" config-ref="Anypoint_MQ_Config" destination="log-management-queue" messageId="#[vars.transactionid]">
+			<anypoint-mq:body><![CDATA[#[payload.logMessage]]]></anypoint-mq:body>
+		</anypoint-mq:publish>
+			<logger level="DEBUG" doc:name="Log Result" doc:id="32c7392b-d041-4b2e-abbb-024f574f1692" message="#[payload]"/>
+			<error-handler >
+				<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="ee75a840-1bee-4ca7-a625-37d3648f4e7f" >
+					<logger level="ERROR" doc:name="Log Error" doc:id="a62f9db5-d211-4148-addb-44b13f77cf2d" message="#[error]" />
+					<raise-error doc:name="Raise error" doc:id="1667c1d0-2363-484a-8b28-673d0b11b696" type="QUEUE:ENQUEUE_ERROR" description="Error on publishing a message: #[error.description]"/>
+				</on-error-propagate>
+			</error-handler>
+		</try>
+	</sub-flow>
+	<sub-flow name="process-send-log-message-subflow" doc:id="2a3caa89-6a69-496e-9a4c-16708385d78e" >
+		<flow-ref doc:name="log-management-sapi-request-subflow" doc:id="b5c9a2a2-e2dd-4ddf-88ba-be7d88ee0a80" name="log-management-sapi-request-subflow"/>
+	</sub-flow>
+</mule>

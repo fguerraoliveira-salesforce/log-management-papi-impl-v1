@@ -1,0 +1,13 @@
+
+log_management_sapi:
+  protocol: "HTTP"
+  host: ""
+  port: "80"
+  base_path: "/api"
+  methods:
+    post_log_message:
+      method: "POST"
+      path: "/log-management"
+      response:
+        timeout: "20000"
+  
