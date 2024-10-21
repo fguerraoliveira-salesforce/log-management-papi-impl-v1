@@ -12,8 +12,8 @@ http://www.mulesoft.org/schema/mule/anypoint-mq http://www.mulesoft.org/schema/m
 		doc:id="a01341a4-4f90-4d3f-a72a-0109d168b7df">
 		<anypoint-mq:connection
 			url="https://mq-us-east-1.anypoint.mulesoft.com/api/v1/organizations/cb984a9b-674c-450c-9c17-76ab21db40fc/environments/6ef6cdbe-e747-4e6f-b7df-86c22ae1cbcc"
-			clientId="ddb2a23f99da4ba29c804a2e4a69e5ee"
-			clientSecret="b91a3abc4F0E47c1Bb059F501535b87e">
+			clientId=""
+			clientSecret="">
 			<reconnection failsDeployment="true">
 				<reconnect-forever />
 			</reconnection>
